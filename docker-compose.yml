@@ -65,6 +65,7 @@ services:
     environment:
       POSTGRES_USERNAME: admin
       POSTGRES_PASSWORD: admin
+      POSTGRES_DB: yellow_taxi
     networks:
       - spark_network
     volumes:
@@ -78,6 +79,7 @@ services:
     environment:
       POSTGRES_USERNAME: admin
       POSTGRES_PASSWORD: admin
+     
     networks:
       - spark_network
     volumes:

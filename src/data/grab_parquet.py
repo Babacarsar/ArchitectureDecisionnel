@@ -1,69 +1,45 @@
-import os
-from minio import Minio, S3Error
 import urllib.request
-import pandas as pd
+import os
 import sys
-import requests
+import shutil
+from minio import Minio
+
+
 
 def main():
-    grab_data()
+    grab_data_2023_to_2024()
+    write_data_minio()
 
+def grab_data_2023_to_2024() -> None:
+    """Delete existing files and download files from January 2018 to August 2023 and save locally."""
+    base_url = "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+    years = range(2023, 2024)  # From 2018 to 2023
+    months = range(1, 3)
+    data_dir = "C:/Users/Babacar/Desktop/cours epsi/architecture decisionnelle/ATL-Datamart/data/raw"
 
-    """Grab the data from New York Yellow Taxi
+    # Supprimer les fichiers existants dans le dossier
+    if os.path.exists(data_dir):
+        shutil.rmtree(data_dir)
+    os.makedirs(data_dir, exist_ok=True)
 
-    This method downloads Parquet files of the New York Yellow Taxi. 
-    Files are saved into the "../../data/raw" folder.
-    """
+    for year in years:
+        for month in months:
+            if year == 2024 and month > 2:
+                break
+            filename = f"yellow_tripdata_{year}-{month:02d}.parquet"
+            file_url = base_url + filename
+            output_path = os.path.join(data_dir, filename)
+            try:
+                urllib.request.urlretrieve(file_url, output_path)
+                print(f"Downloaded {filename}")
+            except Exception as e:
+                print(f"Failed to download {filename}: {e}")
 
-
-def grab_data() -> None:
-    """Télécharge les fichiers de données NYC Yellow Taxi Trip depuis NYC Open Data."""
-    
-    # URLs directes vers les fichiers Parquet sur NYC Open Data (exemples)
-    file_urls = [
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-01.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-02.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-03.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-04.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-05.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-06.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-07.parquet",
-        "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2022-08.parquet"
-    ]
-
-    # Dossier de sauvegarde
-    home_dir = os.path.expanduser("~")
-    raw_data_dir = os.path.join(home_dir, "C:/Users/Babacar/Desktop/cours epsi/architecture decisionnelle/ATL-Datamart/data/raw")
-    os.makedirs(raw_data_dir, exist_ok=True)
-
-    for url in file_urls:
-        file_name = url.split('/')[-1]
-        file_path = os.path.join(raw_data_dir, file_name)
-        print(f"Téléchargement de {file_name} depuis {url}...")
-
-        try:
-            response = requests.get(url)
-            response.raise_for_status()
-            with open(file_path, 'wb') as file:
-                file.write(response.content)
-            print(f"Fichier {file_name} téléchargé avec succès.")
-
-            # Lecture et affichage des données avec pandas
-            print(f"Lecture des données de {file_name}...")
-            data = pd.read_parquet(file_path)
-            print(data.head())  # Affiche les 5 premières lignes pour vérification
-
-        except requests.exceptions.HTTPError as http_err:
-            print(f"Erreur HTTP pour {file_name}: {http_err}")
-        except Exception as e:
-            print(f"Erreur lors du téléchargement de {file_name}: {e}")
-
-   
 def write_data_minio(bucket_name: str, folder_path: str):
-    """
-    This method puts all Parquet files into Minio
-    Ne pas faire cette méthode pour le moment
-    """
+    
+    #This method puts all Parquet files into Minio
+    #Ne pas faire cette méthode pour le moment
+    
     client = Minio(
         "localhost:9000",
         secure=False,
@@ -96,11 +72,11 @@ def write_data_minio(bucket_name: str, folder_path: str):
 
 # Variables pour le nom du bucket et le dossier local à uploader
 bucket_name = "newyork-data-bucket"                          # Nom du bucket MinIO
-folder_path = os.path.expanduser("~/Desktop/cours epsi/architecture decisionnelle/ATL-Datamart/data/raw")  # Dossier contenant les fichiers Parquet
+folder_path = os.path.expanduser("C:/Users/pc/OneDrive/Documents/Architecture_decisionnel/ATL-Datamart-main/ATL-Datamart-main/data/raw")  # Dossier contenant les fichiers Parquet
 
 # Exécution de la fonction
 write_data_minio(bucket_name, folder_path)
-    
+
 
 if __name__ == '__main__':
     sys.exit(main())
