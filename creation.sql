@@ -25,22 +25,27 @@ CREATE TABLE FactTrips (
 
 -- Create table for DimVendors
 CREATE TABLE DimVendors (
-    VendorID INT PRIMARY KEY
+    VendorID INT PRIMARY KEY,
+    VendorName VARCHAR(255)
 );
 
 -- Create table for DimLocations
 CREATE TABLE DimLocations (
-    LocationID INT PRIMARY KEY
+    LocationID INT PRIMARY KEY,
+    ZoneName VARCHAR(255),
+    Borough VARCHAR(255)
 );
 
 -- Create table for DimRateCodes
 CREATE TABLE DimRateCodes (
-    RateCodeID INT PRIMARY KEY
+    RateCodeID INT PRIMARY KEY,
+    RateDescription VARCHAR(255)
 );
 
 -- Create table for DimPaymentTypes
 CREATE TABLE DimPaymentTypes (
-    PaymentTypeID INT PRIMARY KEY
+    PaymentTypeID INT PRIMARY KEY,
+    PaymentDescription VARCHAR(255)
 );
 
 -- Add foreign key constraints
