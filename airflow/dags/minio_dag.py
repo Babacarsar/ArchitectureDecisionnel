@@ -1,78 +1,92 @@
-from urllib import request
-from minio import Minio, S3Error
-from airflow.utils.dates import days_ago
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from datetime import datetime, timedelta
+import urllib.request
 import os
-import urllib.error
+import shutil
+from minio import Minio
 
-def download_parquet(**kwargs):
-    url = "https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-01.parquet"
-    filename = "yellow_tripdata_2024-01.parquet"
-    folder_path = "/data/raw"  # Utiliser le chemin monté dans Docker
-    download_path = os.path.join(folder_path, filename)
+def grab_data_2023_to_2024():
+    """Delete existing files and download files from January 2023 to February 2024 and save locally."""
+    base_url = "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+    years = range(2023, 2024)
+    months = range(1, 3)
+    data_dir = "C:/Users/Babacar/Desktop/cours epsi/architecture decisionnelle/ATL-Datamart/data/raw"
 
-    # Assurez-vous que le répertoire existe
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
+    # Supprimer les fichiers existants dans le dossier
+    if os.path.exists(data_dir):
+        shutil.rmtree(data_dir)
+    os.makedirs(data_dir, exist_ok=True)
 
-    try:
-        # Télécharger le fichier
-        request.urlretrieve(url, download_path)
-        print(f"Fichier téléchargé avec succès: {download_path}")
-        return download_path  # Retourner le chemin pour la tâche suivante
-    except urllib.error.URLError as e:
-        raise RuntimeError(f"Échec du téléchargement du fichier parquet: {str(e)}") from e
+    for year in years:
+        for month in months:
+            filename = f"yellow_tripdata_{year}-{month:02d}.parquet"
+            file_url = base_url + filename
+            output_path = os.path.join(data_dir, filename)
+            try:
+                urllib.request.urlretrieve(file_url, output_path)
+                print(f"Downloaded {filename}")
+            except Exception as e:
+                print(f"Failed to download {filename}: {e}")
 
-def upload_file(**kwargs):
+def write_data_minio():
+    """Upload Parquet files to MinIO bucket."""
     client = Minio(
-        "minio:9000",  # Assurez-vous que ce port est ouvert et accessible
+        "localhost:9000",
         secure=False,
         access_key="minio",
         secret_key="minio123"
     )
+    bucket_name = "newyork-data-bucket"
+    folder_path = "C:/Users/Babacar/Desktop/cours epsi/architecture decisionnelle/ATL-Datamart/data/raw"
 
-    bucket = 'rawnyc'
-    filename = "yellow_tripdata_2024-01.parquet"
-    folder_path = "/data/raw"  # Utiliser le chemin monté dans Docker
-    download_path = os.path.join(folder_path, filename)
+    if not client.bucket_exists(bucket_name):
+        client.make_bucket(bucket_name)
 
-    try:
-        # Vérifier si le bucket existe
-        if not client.bucket_exists(bucket):
-            client.make_bucket(bucket)
-        
-        # Télécharger le fichier dans MinIO
-        client.fput_object(
-            bucket_name=bucket,
-            object_name=filename,
-            file_path=download_path
-        )
-        print(f"Fichier téléversé avec succès dans MinIO: {filename}")
-        os.remove(download_path)  # Supprimer le fichier après l'upload pour éviter la redondance
-    except S3Error as e:
-        raise RuntimeError(f"Erreur de téléchargement dans MinIO: {str(e)}") from e
+    for file_name in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, file_name)
+        if os.path.isfile(file_path) and file_name.endswith(".parquet"):
+            try:
+                client.fput_object(
+                    bucket_name=bucket_name,
+                    object_name=file_name,
+                    file_path=file_path
+                )
+                print(f"Fichier '{file_name}' uploaded to bucket '{bucket_name}'")
+            except Exception as e:
+                print(f"Error uploading {file_name}: {e}")
 
-# Définition du DAG
-with DAG(
-    dag_id='grab_nyc_data_to_minio',
-    start_date=days_ago(1),
-    schedule_interval=None,  # Définir une fréquence selon vos besoins
-    catchup=False,
-    tags=['minio', 'parquet', 'etl']
-) as dag:
-    t1 = PythonOperator(
-        task_id='download_parquet',
-        provide_context=True,
-        python_callable=download_parquet
-    )
+# Define the DAG
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'email_on_failure': False,
+    'email_on_retry': False,
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
 
-    t2 = PythonOperator(
-        task_id='upload_file_task',
-        provide_context=True,
-        python_callable=upload_file,
-        op_kwargs={'download_path': "{{ task_instance.xcom_pull(task_ids='download_parquet') }}" }
-    )
+dag = DAG(
+    dag_id='yellow_taxi_etl_separate',
+    default_args=default_args,
+    description='DAG for downloading and uploading NYC Yellow Taxi data',
+    schedule_interval='@monthly',
+    start_date=datetime(2023, 1, 1),
+    catchup=False
+)
 
-    # Définir l'ordre d'exécution
-    t1 >> t2
+# Define tasks
+download_task = PythonOperator(
+    task_id='download_data',
+    python_callable=grab_data_2023_to_2024,
+    dag=dag
+)
+
+upload_task = PythonOperator(
+    task_id='upload_to_minio',
+    python_callable=write_data_minio,
+    dag=dag
+)
+
+# Set task dependencies
+download_task >> upload_task

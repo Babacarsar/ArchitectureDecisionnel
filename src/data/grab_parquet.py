@@ -10,6 +10,7 @@ def main():
     grab_data_2023_to_2024()
     write_data_minio()
 
+
 def grab_data_2023_to_2024() -> None:
     """Delete existing files and download files from January 2018 to August 2023 and save locally."""
     base_url = "https://d37ci6vzurychx.cloudfront.net/trip-data/"
