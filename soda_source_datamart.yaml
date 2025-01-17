@@ -1,0 +1,9 @@
+data_source yellow_taxi_datamart:
+  type: postgres
+  connection:
+    host: localhost  # Ou l'IP du conteneur Docker si accessible directement
+    port: 15435
+    username: admin
+    password: admin
+    database: yellow_taxi_datamart
+    schema: public

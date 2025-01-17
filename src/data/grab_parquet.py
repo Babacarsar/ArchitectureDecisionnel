@@ -3,13 +3,9 @@ import os
 import sys
 import shutil
 from minio import Minio
-
-
-
 def main():
     grab_data_2023_to_2024()
     write_data_minio()
-
 
 def grab_data_2023_to_2024() -> None:
     """Delete existing files and download files from January 2018 to August 2023 and save locally."""
@@ -37,10 +33,6 @@ def grab_data_2023_to_2024() -> None:
                 print(f"Failed to download {filename}: {e}")
 
 def write_data_minio(bucket_name: str, folder_path: str):
-    
-    #This method puts all Parquet files into Minio
-    #Ne pas faire cette méthode pour le moment
-    
     client = Minio(
         "localhost:9000",
         secure=False,
@@ -74,7 +66,6 @@ def write_data_minio(bucket_name: str, folder_path: str):
 # Variables pour le nom du bucket et le dossier local à uploader
 bucket_name = "newyork-data-bucket"                          # Nom du bucket MinIO
 folder_path = os.path.expanduser("C:/Users/pc/OneDrive/Documents/Architecture_decisionnel/ATL-Datamart-main/ATL-Datamart-main/data/raw")  # Dossier contenant les fichiers Parquet
-
 # Exécution de la fonction
 write_data_minio(bucket_name, folder_path)
 

@@ -1,0 +1,11 @@
+checks for DimLocations:
+  - schema:
+      warn:
+        when required column missing:
+          - locationid
+          - borough
+          - zonename
+      fail:
+        when forbidden column present:
+          - column_name1
+          - column_name2

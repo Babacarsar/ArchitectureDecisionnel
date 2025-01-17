@@ -1,0 +1,10 @@
+checks for DimRateCodes:
+  - schema:
+      warn:
+        when required column missing:
+          - ratecodeid
+          - rateCodedescription
+      fail:
+        when forbidden column present:
+          - column_name1
+          - column_name2
