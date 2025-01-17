@@ -1,0 +1,9 @@
+data_source yellow_taxi:
+  type: postgres
+  connection:
+    host: localhost  # Ou l'IP du conteneur Docker si accessible directement
+    port: 15432
+    username: admin
+    password: admin
+    database: yellow_taxi
+    schema: public

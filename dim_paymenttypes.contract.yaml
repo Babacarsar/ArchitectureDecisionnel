@@ -1,0 +1,11 @@
+checks for DimPaymentTypes:
+  - schema:
+      warn:
+        when required column missing:
+          - paymenttypeid
+          - paymenttypedescription
+      fail:
+        when forbidden column present:
+          - column_name1
+          - column_name2
+  
