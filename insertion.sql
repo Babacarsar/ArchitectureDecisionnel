@@ -100,6 +100,6 @@ SELECT DISTINCT "VendorID",
            ELSE 'Unknown' 
        END 
 FROM dblink(
-    'host=172.18.0.2 port=5432 dbname=yellow_taxi user=admin password=admin', 
+    'host=db port=5432 dbname=yellow_taxi user=admin password=admin', 
     'SELECT DISTINCT "VendorID" FROM "yellow_taxi"'
 ) AS source_data("VendorID" INTEGER);
