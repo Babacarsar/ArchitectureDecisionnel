@@ -17,4 +17,5 @@ pyarrow
 psycopg2
 soda-core 
 soda-core-postgres   
-soda-core-scientific      
+soda-core-scientific  
+soda-sql
