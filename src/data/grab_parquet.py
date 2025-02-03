@@ -3,6 +3,7 @@ import os
 import sys
 import shutil
 from minio import Minio
+
 def main():
     grab_data_2023_to_2024()
     write_data_minio()
